@@ -3,4 +3,4 @@
 def multiply(data):
     data['total'] = data['a'] * data['b']
     return data
-    print("123")
+    print("456")
