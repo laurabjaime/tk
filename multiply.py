@@ -3,4 +3,4 @@
 def multiply(data):
     data['total'] = data['a'] * data['b']
     return data
-    print("Hallo Welt")
+    print("Wir sind der Welt")
