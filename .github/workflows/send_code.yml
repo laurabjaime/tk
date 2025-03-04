@@ -12,14 +12,31 @@ jobs:
     steps:
       - name: Checkout do código
         uses: actions/checkout@v3
-
-      - name: Ler código dos arquivos Python e armazenar como string
+        
+      - name: Debug - Verificar variáveis antes do envio
         run: |
-          SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
-          MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          echo "SUMMARIZE_CODE: ${{ env.SUMMARIZE_CODE }}"
+          echo "MULTIPLY_CODE: ${{ env.MULTIPLY_CODE }}"
 
-          echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
-          echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
+      - name: Verificar se variáveis não estão vazias
+        run: |
+          if [ -z "${{ env.SUMMARIZE_CODE }}" ]; then
+            echo "Erro: SUMMARIZE_CODE está vazio!"
+            exit 1
+          fi
+
+          if [ -z "${{ env.MULTIPLY_CODE }}" ]; then
+            echo "Erro: MULTIPLY_CODE está vazio!"
+            exit 1
+          fi
+
+      # - name: Ler código dos arquivos Python e armazenar como string
+      #   run: |
+      #     SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+      #     MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+
+      #     echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
+      #     echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
 
       - name: Enviar código para API
         run: |
@@ -36,11 +53,20 @@ jobs:
               "Content-Type": "application/json"
           }
 
+          summarize_code = os.getenv("SUMMARIZE_CODE")
+          multiply_code = os.getenv("MULTIPLY_CODE")
+
+          if not summarize_code or summarize_code.strip() == "":
+              raise ValueError("Erro: SUMMARIZE_CODE está vazio!")
+
+          if not multiply_code or multiply_code.strip() == "":
+              raise ValueError("Erro: MULTIPLY_CODE está vazio!")
+
           summarize_payload = json.dumps({
               "data": {
                   "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
                   "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc643",
-                  "src_code": os.getenv("SUMMARIZE_CODE")
+                  "src_code": summarize_code
               },
               "metadata": {
                   "version": "v1.0",
@@ -55,7 +81,7 @@ jobs:
               "data": {
                   "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
                   "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc123",
-                  "src_code": os.getenv("MULTIPLY_CODE")
+                  "src_code": multiply_code
               },
               "metadata": {
                   "version": "v1.0",
