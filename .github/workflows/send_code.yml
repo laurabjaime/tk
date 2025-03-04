@@ -1,0 +1,78 @@
+name: Send Python Code to API
+
+on:
+  push:
+    branches:
+      - main  # Executa quando há um merge para main
+
+jobs:
+  send_code_to_api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Ler código dos arquivos Python e armazenar como string
+        run: |
+          SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+
+          echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
+          echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
+
+      - name: Enviar código para API
+        run: |
+          python - <<EOF
+          import http.client
+          import json
+          import os
+
+          conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
+
+          headers = {
+              "X-Api-Key": os.getenv("API_KEY"),
+              "accept": "application/json",
+              "Content-Type": "application/json"
+          }
+
+          summarize_payload = json.dumps({
+              "data": {
+                  "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
+                  "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc643",
+                  "src_code": os.getenv("SUMMARIZE_CODE")
+              },
+              "metadata": {
+                  "version": "v1.0",
+                  "entity_id": "string"
+              },
+              "control": {
+                  "execution_mode": "sync"
+              }
+          })
+
+          multiply_payload = json.dumps({
+              "data": {
+                  "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
+                  "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc123",
+                  "src_code": os.getenv("MULTIPLY_CODE")
+              },
+              "metadata": {
+                  "version": "v1.0",
+                  "entity_id": "string"
+              },
+              "control": {
+                  "execution_mode": "sync"
+              }
+          })
+
+          # Enviar SUMMARIZE_CODE
+          conn.request("POST", "/run/api/v1/flows/patch-decision-graph/sandbox/decide", summarize_payload, headers)
+          res = conn.getresponse()
+          print("Summarize response:", res.status, res.read().decode("utf-8"))
+
+          # Enviar MULTIPLY_CODE
+          conn.request("POST", "/run/api/v1/flows/patch-decision-graph/sandbox/decide", multiply_payload, headers)
+          res = conn.getresponse()
+          print("Multiply response:", res.status, res.read().decode("utf-8"))
+          EOF
