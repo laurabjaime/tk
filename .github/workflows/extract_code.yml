@@ -13,14 +13,14 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v3
 
-      - name: Ler código dos arquivos Python e exibir como string
+      - name: Ler código dos arquivos Python e exibir como string formatada
         run: |
           echo "Summarize.py:"
           echo '"""'
-          cat summarize.py
+          cat summarize.py | tr '\n' ' ' | sed 's/  */ /g' | sed 's/ /\\n/g'
           echo '"""'
 
           echo "Multiply.py:"
           echo '"""'
-          cat multiply.py
+          cat multiply.py | tr '\n' ' ' | sed 's/  */ /g' | sed 's/ /\\n/g'
           echo '"""'
