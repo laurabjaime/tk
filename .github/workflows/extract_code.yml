@@ -1,0 +1,26 @@
+name: Extract Python Code as String
+
+on:
+  push:
+    branches:
+      - main  # Roda sempre que houver um merge na main
+
+jobs:
+  extract_code:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Ler código dos arquivos Python e exibir como string
+        run: |
+          echo "Summarize.py:"
+          echo '"""'
+          cat summarize.py
+          echo '"""'
+
+          echo "Multiply.py:"
+          echo '"""'
+          cat multiply.py
+          echo '"""'
