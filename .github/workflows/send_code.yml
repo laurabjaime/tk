@@ -12,6 +12,18 @@ jobs:
     steps:
       - name: Checkout do código
         uses: actions/checkout@v3
+
+      - name: Ler código dos arquivos Python e armazenar como string
+        run: |
+          SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+
+          # Se as variáveis estiverem vazias, definir valor padrão
+          if [ -z "$SUMMARIZE_CODE" ]; then SUMMARIZE_CODE="print('Erro: código não encontrado')"; fi
+          if [ -z "$MULTIPLY_CODE" ]; then MULTIPLY_CODE="print('Erro: código não encontrado')"; fi
+
+          echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
+          echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
         
       - name: Debug - Verificar variáveis antes do envio
         run: |
