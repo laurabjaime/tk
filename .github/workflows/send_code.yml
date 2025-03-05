@@ -13,52 +13,51 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3
 
-      - name: Debug - Check API Key
+      - name: Check API Key
         run: |
           if [ -z "${{ secrets.API_KEY }}" ]; then
-            echo "Error: API_KEY is missing from GitHub Secrets!"
+            echo "ERROR: API_KEY is missing from GitHub Secrets"
             exit 1
           else
-            echo "API_KEY is properly set!"
+            echo "API_KEY is properly set"
           fi
 
       - name: Read all Python files and store them as strings dynamically
         run: |
           echo "Searching for Python files..."
 
-          # Lista todos os arquivos .py no repositório
+          # Lists all .py files in the repository
           PYTHON_FILES=$(find . -maxdepth 1 -type f -name "*.py" | xargs -n 1 basename | tr '\n' ' ')
 
-          # Se nenhum arquivo .py for encontrado, exibe um erro e interrompe o workflow
+          # If no .py files are found, display an error and stop the workflow
           if [ -z "$PYTHON_FILES" ]; then
-            echo "ERROR: No Python files found!"
+            echo "ERROR: No Python files found"
             exit 1
           fi
 
           echo "Found Python files: $PYTHON_FILES"
 
-          # Armazena os nomes dos arquivos em uma variável de ambiente
+          # Storing the file names
           echo "PYTHON_FILES=${PYTHON_FILES}" >> $GITHUB_ENV
 
-          # Loop para ler e armazenar o conteúdo de cada arquivo dinamicamente
+          # Loop to read and store the content of each file
           for file in $PYTHON_FILES; do
-            FILE_NAME=$(basename "$file" .py | tr '[:lower:]' '[:upper:]')  # Remove .py e coloca em maiúsculas
+            FILE_NAME=$(basename "$file" .py | tr '[:lower:]' '[:upper:]')
             echo "📄 Processing file: $file → Stored as ${FILE_NAME}_CODE"
 
-            # FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-            FILE_CONTENT=$(awk '{gsub(/\r/, ""); printf "%s\n", $0}' "$file" | sed ':a;N;$!ba;s/\n/\\n/g')
+            FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 
-            # Se o arquivo estiver vazio, exibe um aviso mas continua o workflow
+            # If the file is empty, display a warning but continue the workflow
             if [[ -z "$FILE_CONTENT" ]]; then
               echo "WARNING: File $file is empty!"
-              continue  # Continua para o próximo arquivo, sem interromper o workflow
+              continue
             fi
 
-            # Salva cada código no ambiente do GitHub Actions com um nome dinâmico
+            # Save each code snippet in the GitHub Actions environment with a dynamic name
             echo "${FILE_NAME}_CODE=${FILE_CONTENT}" >> $GITHUB_ENV
           done
 
-      - name: Send code to API dynamically
+      - name: Send code to API
         env:
           API_KEY: ${{ secrets.API_KEY }}
           PYTHON_FILES: ${{ env.PYTHON_FILES }}
@@ -68,7 +67,7 @@ jobs:
           import json
           import os
 
-          # Configuração da API
+          # API configuration
           API_HOST = "eu-central-1.taktile-org.decide.taktile.com"
           ENDPOINT_LIST_FLOWS = "/run/api/v1/flows/list-decision-graphs/sandbox/decide"
           ENDPOINT_GET_GRAPH = "/run/api/v1/flows/get-decision-graph/sandbox/decide"
@@ -76,7 +75,7 @@ jobs:
 
           api_key = os.getenv("API_KEY")
           if not api_key:
-              raise ValueError("❌ ERROR: API_KEY is empty!")
+              raise ValueError("ERROR: API_KEY is empty")
 
           headers = {
               "X-Api-Key": api_key,
@@ -84,11 +83,12 @@ jobs:
               "Content-Type": "application/json"
           }
 
-          # Criar conexão com a API
+          # Create connection
           conn = http.client.HTTPSConnection(API_HOST)
 
+          # Defining functions to get flow_id, node_id from code_nodes by name
           def flow_ids(org_name):
-              """Obtém todos os flow_id da organização."""
+              """Retrieve all flow_id from the organization."""
               payload = json.dumps({
                   "data": {"organization_name": org_name},
                   "metadata": {"version": "v1.0", "entity_id": "string"},
@@ -105,7 +105,7 @@ jobs:
               return flow_ids
 
           def node_ids(org_name):
-              """Obtém todos os node_id dos code_nodes de cada flow."""
+              """Retrieve all node_id from the code_nodes of each flow"""
               flows = flow_ids(org_name)
               ans = {}
               for flow_id in flows:
@@ -129,20 +129,20 @@ jobs:
 
               return ans
 
-          # Organização usada (pode ser parametrizado se necessário)
+          # Organization name
           ORGANIZATION_NAME = "NB36"
           
           # Node codes available
           nodes_available = node_ids(ORGANIZATION_NAME)
 
-          # Lista de arquivos detectados
+          # List of detected files
           python_files = os.getenv("PYTHON_FILES", "").split()
           if not python_files:
-              raise ValueError("❌ ERROR: No Python files found!")
+              raise ValueError("ERROR: No Python files found!")
 
-          print(f"✅ Found Python files: {python_files}")
+          print(f"Found Python files: {python_files}")
 
-          # Enviar cada arquivo automaticamente
+          # Finding flow_id and node_id for each file name = code name
           for file_name in python_files:
               name = f"{file_name.replace('.py', '').lower()}"
               env_var = f"{file_name.replace('.py', '').upper()}_CODE"
@@ -151,8 +151,6 @@ jobs:
               for i in range(len(aux)):
                   flow_id = aux[i][0]
                   node_id = aux[i][1]
-
-                  # Criar payload dinâmico
                   payload = json.dumps({
                       "data": {
                           "flow_id": flow_id,
@@ -168,15 +166,14 @@ jobs:
                       }
                   })
     
-                  print(f"🚀 Sending {file_name} (flow_id: {flow_id}, node_id: {node_id}) to API...")
+                  print(f"Sending {file_name} (flow_id: {flow_id}, node_id: {node_id}) to API...")
                   conn.request("POST", ENDPOINT_UPDATE, payload, headers)
                   res = conn.getresponse()
                   data = res.read()
                   print(data.decode("utf-8"))
                   response_json = json.loads(data.decode("utf-8"))
-                  # print(f"✅ {file_name} response:", res.status, res.read().decode("utf-8"))
 
-          print("🎯 All files processed!")
+          print("All files processed!")
           EOF
 
 
