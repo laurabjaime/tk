@@ -19,3 +19,8 @@ This GitHub Action automatically triggers Taktile API to update code nodes when 
 
 ## Example Usage
 Whenever a Python file is updated and merged to `main`, the workflow runs automatically and update the code nodes with same name from Taktile.
+
+## Important notes
+- Ensure your .py files names match the code_node names on Taktile
+- If a file is empty, it will be skipped with a warning
+- If no Python files are found, the workflow will stop
