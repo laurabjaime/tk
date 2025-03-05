@@ -3,63 +3,55 @@ name: Send Python Code to API
 on:
   push:
     branches:
-      - main  # Executa quando há um merge para main
+      - main  # Merge to main
 
 jobs:
   send_code_to_api:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do código
+      - name: Checkout the code
         uses: actions/checkout@v3
 
-      - name: Debug - Verificar API Key
+      - name: Debug - Check API Key
         run: |
           if [ -z "${{ secrets.API_KEY }}" ]; then
-            echo "Erro: API_KEY não está configurada no GitHub Secrets!"
+            echo "Error: API_KEY is missing from GitHub Secrets!"
             exit 1
           else
-            echo "API_KEY foi carregada corretamente!"
+            echo "API_KEY is properly set!"
           fi
 
-      - name: Ler código dos arquivos Python e armazenar como string
+      - name: Read Python files and store them as strings
         run: |
           SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
           MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
 
-          # Se as variáveis estiverem vazias, definir valor padrão
-          if [ -z "$SUMMARIZE_CODE" ]; then SUMMARIZE_CODE="print('Erro: código não encontrado')"; fi
-          if [ -z "$MULTIPLY_CODE" ]; then MULTIPLY_CODE="print('Erro: código não encontrado')"; fi
+          # If variables are empty, set a default value
+          if [ -z "$SUMMARIZE_CODE" ]; then SUMMARIZE_CODE="print('Error: code not found')"; fi
+          if [ -z "$MULTIPLY_CODE" ]; then MULTIPLY_CODE="print('Error: code not found')"; fi
 
           echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
           echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
         
-      - name: Debug - Verificar variáveis antes do envio
+      - name: Debug - Check variables before sending
         run: |
           echo "SUMMARIZE_CODE: ${{ env.SUMMARIZE_CODE }}"
           echo "MULTIPLY_CODE: ${{ env.MULTIPLY_CODE }}"
 
-      - name: Verificar se variáveis não estão vazias
+      - name: Check if variables are empty
         run: |
           if [ -z "${{ env.SUMMARIZE_CODE }}" ]; then
-            echo "Erro: SUMMARIZE_CODE está vazio!"
+            echo "Error: SUMMARIZE_CODE is empty!"
             exit 1
           fi
 
           if [ -z "${{ env.MULTIPLY_CODE }}" ]; then
-            echo "Erro: MULTIPLY_CODE está vazio!"
+            echo "Error: MULTIPLY_CODE is empty!"
             exit 1
           fi
 
-      # - name: Ler código dos arquivos Python e armazenar como string
-      #   run: |
-      #     SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
-      #     MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
-
-      #     echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
-      #     echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
-
-      - name: Enviar código para API
+      - name: Send code to API
         run: |
           python - <<EOF
           import http.client
@@ -69,7 +61,7 @@ jobs:
           conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
 
           headers = {
-              "X-Api-Key": "c179117d-a4ce-4635-a268-b37d13668515",
+              "X-Api-Key": "c179117d-a4ce-4635-a268-b37d13668515", # Import from GitHub Secrets
               "accept": "application/json",
               "Content-Type": "application/json"
           }
@@ -113,12 +105,12 @@ jobs:
               }
           })
 
-          # Enviar SUMMARIZE_CODE
+          # Send SUMMARIZE_CODE
           conn.request("POST", "/run/api/v1/flows/patch-decision-graph/sandbox/decide", summarize_payload, headers)
           res = conn.getresponse()
           print("Summarize response:", res.status, res.read().decode("utf-8"))
 
-          # Enviar MULTIPLY_CODE
+          # Send MULTIPLY_CODE
           conn.request("POST", "/run/api/v1/flows/patch-decision-graph/sandbox/decide", multiply_payload, headers)
           res = conn.getresponse()
           print("Multiply response:", res.status, res.read().decode("utf-8"))
