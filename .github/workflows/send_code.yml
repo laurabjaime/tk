@@ -24,8 +24,11 @@ jobs:
 
       - name: Read Python files and store them as strings
         run: |
-          SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
-          MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          # SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          # MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          
+          SUMMARIZE_CODE=$(cat summarize.py)
+          MULTIPLY_CODE=$(cat multiply.py)
 
           # If variables are empty, set a default value
           if [ -z "$SUMMARIZE_CODE" ]; then SUMMARIZE_CODE="print('Error: code not found')"; fi
