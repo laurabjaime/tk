@@ -26,9 +26,6 @@ jobs:
         run: |          
           SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
           MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
-          
-          # SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py)
-          # MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py)
 
           # If variables are empty, set a default value
           if [ -z "$SUMMARIZE_CODE" ]; then SUMMARIZE_CODE="print('Error: code not found')"; fi
@@ -69,7 +66,6 @@ jobs:
 
           if not api_key:
               raise ValueError("Error: API_KEY is empty!")
-          print("API Key loaded successfully:", api_key[:5] + "*****")
 
           headers = {
               "X-Api-Key": api_key,
@@ -77,11 +73,10 @@ jobs:
               "Content-Type": "application/json"
           }
 
-          python_files = os.getenv("PYTHON_FILES", "").split()
-          
-          for file_name in python_files:
-              env_var = f"{file_name.replace('.py', '').upper()}_CODE"
-              src_code = os.getenv(env_var)
+          # python_files = os.getenv("PYTHON_FILES", "").split()
+          # for file_name in python_files:
+          #     env_var = f"{file_name.replace('.py', '').upper()}_CODE"
+          #     src_code = os.getenv(env_var)
           
           summarize_code = os.getenv("SUMMARIZE_CODE")
           multiply_code = os.getenv("MULTIPLY_CODE")
