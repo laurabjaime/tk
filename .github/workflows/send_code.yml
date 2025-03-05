@@ -28,8 +28,8 @@ jobs:
           MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
 
           # If variables are empty, set a default value
-          if [ -z "$SUMMARIZE_CODE" ]; then echo "WARNING: File $file is empty!"; fi
-          if [ -z "$MULTIPLY_CODE" ]; then echo "WARNING: File $file is empty!"; fi
+          if [[ -z "$SUMMARIZE_CODE" ]]; then echo "WARNING: File $file is empty!" else echo "File $file is not empty!"; fi
+          if [[ -z "$MULTIPLY_CODE" ]]; then echo "WARNING: File $file is empty!" else echo "File $file is not empty!"; fi
 
           echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
           echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
@@ -38,18 +38,6 @@ jobs:
         run: |
           echo "SUMMARIZE_CODE: ${{ env.SUMMARIZE_CODE }}"
           echo "MULTIPLY_CODE: ${{ env.MULTIPLY_CODE }}"
-
-      - name: Check if variables are empty
-        run: |
-          if [ -z "${{ env.SUMMARIZE_CODE }}" ]; then
-            echo "Error: SUMMARIZE_CODE is empty!"
-            exit 1
-          fi
-
-          if [ -z "${{ env.MULTIPLY_CODE }}" ]; then
-            echo "Error: MULTIPLY_CODE is empty!"
-            exit 1
-          fi
 
       - name: Send code to API
         env:
