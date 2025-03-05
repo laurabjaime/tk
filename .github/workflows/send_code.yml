@@ -60,6 +60,7 @@ jobs:
       - name: Send code to API
         env:
           API_KEY: ${{ secrets.API_KEY }}
+          ORGANIZATION_NAME: ${{ secrets.ORG_NAME }}
           PYTHON_FILES: ${{ env.PYTHON_FILES }}
         run: |
           python - <<EOF
@@ -130,7 +131,9 @@ jobs:
               return ans
 
           # Organization name
-          ORGANIZATION_NAME = "NB36"
+          org_name = os.getenv("ORGANIZATION_NAME")
+          if not org_name:
+              raise ValueError("ERROR: ORGANIZATION_NAME is empty!")
           
           # Node codes available
           nodes_available = node_ids(ORGANIZATION_NAME)
