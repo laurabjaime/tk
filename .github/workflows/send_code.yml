@@ -22,6 +22,15 @@ jobs:
             echo "API_KEY is properly set"
           fi
 
+      - name: Check Organization Name
+        run: |
+          if [ -z "${{ secrets.ORG_NAME }}" ]; then
+            echo "ERROR: ORG_NAME is missing from GitHub Secrets"
+            exit 1
+          else
+            echo "ORG_NAME is properly set"
+          fi
+
       - name: Read all Python files and store them as strings dynamically
         run: |
           echo "Searching for Python files..."
