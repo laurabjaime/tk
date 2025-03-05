@@ -28,8 +28,8 @@ jobs:
           MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
 
           # If variables are empty, set a default value
-          if [ -z "$SUMMARIZE_CODE" ]; then SUMMARIZE_CODE="print('Error: code not found')"; fi
-          if [ -z "$MULTIPLY_CODE" ]; then MULTIPLY_CODE="print('Error: code not found')"; fi
+          if [ -z "$SUMMARIZE_CODE" ]; then echo "WARNING: File $file is empty!"; fi
+          if [ -z "$MULTIPLY_CODE" ]; then echo "WARNING: File $file is empty!"; fi
 
           echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
           echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
