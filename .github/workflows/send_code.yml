@@ -69,7 +69,7 @@ jobs:
           conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
 
           headers = {
-              "X-Api-Key": os.getenv("API_KEY"),
+              "X-Api-Key": "c179117d-a4ce-4635-a268-b37d13668515",
               "accept": "application/json",
               "Content-Type": "application/json"
           }
