@@ -68,7 +68,7 @@ jobs:
           import os
 
           # Configuração da API
-          API_HOST = "eu-central-1.decide.com"
+          API_HOST = "eu-central-1.taktile-org.decide.taktile.com"
           ENDPOINT = "/run/api/v1/flows/patch-decision-graph/sandbox/decide"
           api_key = os.getenv("API_KEY")
 
