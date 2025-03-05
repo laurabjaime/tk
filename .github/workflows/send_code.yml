@@ -64,6 +64,10 @@ jobs:
           conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
           api_key = os.getenv("API_KEY") # Import from  GitHub Secrets
 
+          if not api_key:
+              raise ValueError("Error: API_KEY is empty!")
+          print("API Key loaded successfully:", api_key[:5] + "*****")
+
           headers = {
               "X-Api-Key": api_key,
               "accept": "application/json",
