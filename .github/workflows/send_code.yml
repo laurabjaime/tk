@@ -24,18 +24,18 @@ jobs:
 
       - name: Read all Python files and store them as strings dynamically
         run: |
-          echo "🔍 Searching for Python files..."
+          echo "Searching for Python files..."
 
           # Lista todos os arquivos .py no repositório
           PYTHON_FILES=$(find . -maxdepth 1 -type f -name "*.py" | xargs -n 1 basename | tr '\n' ' ')
 
           # Se nenhum arquivo .py for encontrado, exibe um erro e interrompe o workflow
           if [ -z "$PYTHON_FILES" ]; then
-            echo "❌ ERROR: No Python files found!"
+            echo "ERROR: No Python files found!"
             exit 1
           fi
 
-          echo "✅ Found Python files: $PYTHON_FILES"
+          echo "Found Python files: $PYTHON_FILES"
 
           # Armazena os nomes dos arquivos em uma variável de ambiente
           echo "PYTHON_FILES=${PYTHON_FILES}" >> $GITHUB_ENV
@@ -49,7 +49,7 @@ jobs:
 
             # Se o arquivo estiver vazio, exibe um aviso mas continua o workflow
             if [[ -z "$FILE_CONTENT" ]]; then
-              echo "⚠️ WARNING: File $file is empty!"
+              echo "WARNING: File $file is empty!"
               continue  # Continua para o próximo arquivo, sem interromper o workflow
             fi
 
@@ -57,98 +57,70 @@ jobs:
             echo "${FILE_NAME}_CODE=${FILE_CONTENT}" >> $GITHUB_ENV
           done
 
+      - name: Send code to API
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          PYTHON_FILES: ${{ env.PYTHON_FILES }}
+        run: |
+          python - <<EOF
+          import http.client
+          import json
+          import os
 
-          
-      # - name: Debug - Check stored variables
-      #   run: |          
-      #     SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
-      #     MULTIPLY_CODE=$(awk '{printf "%s\\n", $0}' multiply.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+          # Configuração da API
+          API_HOST = "eu-central-1.decide.com"
+          ENDPOINT = "/run/api/v1/flows/patch-decision-graph/sandbox/decide"
+          api_key = os.getenv("API_KEY")
 
-      #     # If variables are empty, set a default value
-      #     if [[ -z "$SUMMARIZE_CODE" ]]; then echo "WARNING: File $file is empty!" else echo "File $file is not empty!"; fi
-      #     if [[ -z "$MULTIPLY_CODE" ]]; then echo "WARNING: File $file is empty!" else echo "File $file is not empty!"; fi
+          if not api_key:
+              raise ValueError("❌ ERROR: API_KEY is empty!")
 
-          # echo "SUMMARIZE_CODE=${SUMMARIZE_CODE}" >> $GITHUB_ENV
-          # echo "MULTIPLY_CODE=${MULTIPLY_CODE}" >> $GITHUB_ENV
-        
-      # - name: Debug - Check variables before sending
-      #   run: |
-      #     echo "SUMMARIZE_CODE: ${{ env.SUMMARIZE_CODE }}"
-      #     echo "MULTIPLY_CODE: ${{ env.MULTIPLY_CODE }}"
+          headers = {
+              "X-Api-Key": api_key,
+              "accept": "application/json",
+              "Content-Type": "application/json"
+          }
 
-      # - name: Send code to API
-      #   env:
-      #     API_KEY: ${{ secrets.API_KEY }}
-      #     PYTHON_FILES: ${{ env.PYTHON_FILES }}
-      #   run: |
-      #     python - <<EOF
-      #     import http.client
-      #     import json
-      #     import os
+          # Lista de arquivos detectados
+          python_files = os.getenv("PYTHON_FILES", "").split()
+          if not python_files:
+              raise ValueError("❌ ERROR: No Python files found!")
 
-      #     conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
-      #     api_key = os.getenv("API_KEY") # Import from  GitHub Secrets
+          print(f"✅ Found Python files: {python_files}")
 
-      #     if not api_key:
-      #         raise ValueError("Error: API_KEY is empty!")
+          # Criar conexão com a API
+          conn = http.client.HTTPSConnection(API_HOST)
 
-      #     headers = {
-      #         "X-Api-Key": api_key,
-      #         "accept": "application/json",
-      #         "Content-Type": "application/json"
-      #     }
+          # Enviar cada arquivo automaticamente
+          for file_name in python_files:
+              env_var = f"{file_name.replace('.py', '').upper()}_CODE"
+              src_code = os.getenv(env_var)
 
-      #     # python_files = os.getenv("PYTHON_FILES", "").split()
-      #     # for file_name in python_files:
-      #     #     env_var = f"{file_name.replace('.py', '').upper()}_CODE"
-      #     #     src_code = os.getenv(env_var)
-          
-      #     summarize_code = os.getenv("SUMMARIZE_CODE")
-      #     multiply_code = os.getenv("MULTIPLY_CODE")
+              if not src_code or src_code.strip() == "":
+                  print(f"⚠️ WARNING: No code found for {file_name}, skipping...")
+                  continue
 
-      #     if not summarize_code or summarize_code.strip() == "":
-      #         raise ValueError("Error: SUMMARIZE_CODE is empty!")
+              # Criar payload dinâmico (Flow ID e Node ID são estáticos por enquanto)
+              payload = json.dumps({
+                  "data": {
+                      "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
+                      "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc123",
+                      "src_code": src_code
+                  },
+                  "metadata": {
+                      "version": "v1.0",
+                      "entity_id": "string"
+                  },
+                  "control": {
+                      "execution_mode": "sync"
+                  }
+              })
 
-      #     if not multiply_code or multiply_code.strip() == "":
-      #         raise ValueError("Error: MULTIPLY_CODE is empty!")
+              print(f"🚀 Sending {file_name} to API...")
+              conn.request("POST", ENDPOINT, payload, headers)
+              res = conn.getresponse()
+              print(f"✅ {file_name} response:", res.status, res.read().decode("utf-8"))
 
-      #     summarize_payload = json.dumps({
-      #         "data": {
-      #             "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
-      #             "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc643",
-      #             "src_code": summarize_code
-      #         },
-      #         "metadata": {
-      #             "version": "v1.0",
-      #             "entity_id": "string"
-      #         },
-      #         "control": {
-      #             "execution_mode": "sync"
-      #         }
-      #     })
+          print("🎯 All files processed!")
+          EOF
 
-      #     multiply_payload = json.dumps({
-      #         "data": {
-      #             "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
-      #             "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc123",
-      #             "src_code": multiply_code
-      #         },
-      #         "metadata": {
-      #             "version": "v1.0",
-      #             "entity_id": "string"
-      #         },
-      #         "control": {
-      #             "execution_mode": "sync"
-      #         }
-      #     })
-
-      #     # Send SUMMARIZE_CODE
-      #     conn.request("POST", "/run/api/v1/flows/patch-decision-graph/sandbox/decide", summarize_payload, headers)
-      #     res = conn.getresponse()
-      #     print("Summarize response:", res.status, res.read().decode("utf-8"))
-
-      #     # Send MULTIPLY_CODE
-      #     conn.request("POST", "/run/api/v1/flows/patch-decision-graph/sandbox/decide", multiply_payload, headers)
-      #     res = conn.getresponse()
-      #     print("Multiply response:", res.status, res.read().decode("utf-8"))
-      #     EOF
