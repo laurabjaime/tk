@@ -13,6 +13,20 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3
 
+      - name: Read all Python files and store them as strings
+        run: |
+          # Lista todos os arquivos .py no repositório
+          PYTHON_FILES=$(find . -maxdepth 1 -type f -name "*.py")
+
+          # Loop para ler e armazenar o conteúdo de cada arquivo
+          for file in $PYTHON_FILES; do
+            FILE_NAME=$(basename "$file" .py)  # Remove a extensão .py
+            FILE_CONTENT=$(awk '{printf "%s\\n", $0}' "$file" | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
+            
+            # Salva no ambiente do GitHub Actions
+            echo "${FILE_NAME}_CODE=${FILE_CONTENT}" >> $GITHUB_ENV
+          done
+
       - name: Debug - Check API Key
         run: |
           if [ -z "${{ secrets.API_KEY }}" ]; then
