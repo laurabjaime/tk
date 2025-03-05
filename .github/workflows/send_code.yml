@@ -1,3 +1,78 @@
+name: Send Python Code to API
+
+on:
+  push:
+    branches:
+      - main  # Merge to main
+
+jobs:
+  send_code_to_api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Check API Key
+        run: |
+          if [ -z "${{ secrets.API_KEY }}" ]; then
+            echo "ERROR: API_KEY is missing from GitHub Secrets"
+            exit 1
+          else
+            echo "API_KEY is properly set"
+          fi
+
+      - name: Check Organization Name
+        run: |
+          if [ -z "${{ secrets.ORG_NAME }}" ]; then
+            echo "ERROR: ORG_NAME is missing from GitHub Secrets"
+            exit 1
+          else
+            echo "ORG_NAME is properly set"
+          fi
+
+      - name: Read all Python files and store them as strings dynamically
+        run: |
+          echo "Searching for Python files..."
+
+          # Lists all .py files in the repository
+          PYTHON_FILES=$(find . -maxdepth 1 -type f -name "*.py" | xargs -n 1 basename | tr '\n' ' ')
+
+          # If no .py files are found, display an error and stop the workflow
+          if [ -z "$PYTHON_FILES" ]; then
+            echo "ERROR: No Python files found"
+            exit 1
+          fi
+
+          echo "Found Python files: $PYTHON_FILES"
+
+          # Storing the file names
+          echo "PYTHON_FILES=${PYTHON_FILES}" >> $GITHUB_ENV
+
+          # Loop to read and store the content of each file
+          for file in $PYTHON_FILES; do
+            FILE_NAME=$(basename "$file" .py | tr '[:lower:]' '[:upper:]')
+            echo "Processing file: $file → Stored as ${FILE_NAME}_CODE"
+
+            FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+
+            # If the file is empty, display a warning but continue the workflow
+            if [[ -z "$FILE_CONTENT" ]]; then
+              echo "WARNING: File $file is empty!"
+              continue
+            fi
+
+            # Save each code snippet in the GitHub Actions environment with a dynamic name
+            echo "${FILE_NAME}_CODE=${FILE_CONTENT}" >> $GITHUB_ENV
+          done
+
+      - name: Send code to API
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          ORG_NAME: ${{ secrets.ORG_NAME }}
+          PYTHON_FILES: ${{ env.PYTHON_FILES }}
+        run: |
+          python - <<EOF
           import http.client
           import json
           import os
@@ -65,9 +140,8 @@
               return ans
 
           # Organization name
-        #   org_name = os.getenv("ORG_NAME")
+          # org_name = os.getenv("ORG_NAME")
           org_name = "NB36"
-          print(org_name)
           if not org_name:
               raise ValueError("ERROR: ORG_NAME is empty!")
           
@@ -114,3 +188,4 @@
 
           print("All files processed!")
           EOF
+
