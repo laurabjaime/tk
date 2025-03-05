@@ -69,6 +69,7 @@ jobs:
       - name: Send code to API
         env:
           API_KEY: ${{ secrets.API_KEY }}
+          ORG_NAME: ${{ secrets.ORG_NAME }}
           PYTHON_FILES: ${{ env.PYTHON_FILES }}
         run: |
           python - <<EOF
@@ -85,6 +86,10 @@ jobs:
           api_key = os.getenv("API_KEY")
           if not api_key:
               raise ValueError("ERROR: API_KEY is empty")
+
+          org_name = os.getenv("ORG_NAME")
+          if not api_key:
+              raise ValueError("ERROR: ORG_NAME is empty")
 
           headers = {
               "X-Api-Key": api_key,
