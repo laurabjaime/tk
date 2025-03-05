@@ -57,7 +57,7 @@ jobs:
             echo "${FILE_NAME}_CODE=${FILE_CONTENT}" >> $GITHUB_ENV
           done
 
-      - name: Send code to API
+      - name: Send code to API dynamically
         env:
           API_KEY: ${{ secrets.API_KEY }}
           PYTHON_FILES: ${{ env.PYTHON_FILES }}
@@ -69,9 +69,11 @@ jobs:
 
           # Configuração da API
           API_HOST = "eu-central-1.taktile-org.decide.taktile.com"
-          ENDPOINT = "/run/api/v1/flows/patch-decision-graph/sandbox/decide"
-          api_key = os.getenv("API_KEY")
+          ENDPOINT_LIST_FLOWS = "/run/api/v1/flows/list-decision-graphs/sandbox/decide"
+          ENDPOINT_GET_GRAPH = "/run/api/v1/flows/get-decision-graph/sandbox/decide"
+          ENDPOINT_UPDATE = "/run/api/v1/flows/patch-decision-graph/sandbox/decide"
 
+          api_key = os.getenv("API_KEY")
           if not api_key:
               raise ValueError("❌ ERROR: API_KEY is empty!")
 
@@ -81,6 +83,55 @@ jobs:
               "Content-Type": "application/json"
           }
 
+          # Criar conexão com a API
+          conn = http.client.HTTPSConnection(API_HOST)
+
+          def flow_ids(org_name):
+              """Obtém todos os flow_id da organização."""
+              payload = json.dumps({
+                  "data": {"organization_name": org_name},
+                  "metadata": {"version": "v1.0", "entity_id": "string"},
+                  "control": {"execution_mode": "sync"}
+              })
+              conn.request("POST", ENDPOINT_LIST_FLOWS, payload, headers)
+              res = conn.getresponse()
+              data = res.read()
+              response_json = json.loads(data.decode("utf-8"))
+              
+              return [flow["flow_id"] for flow in response_json.get("data", {}).get("flows", [])]
+
+          def node_ids(org_name):
+              """Obtém todos os node_id dos code_nodes de cada flow."""
+              flows = flow_ids(org_name)
+              ans = {}
+              for flow_id in flows:
+                  payload = json.dumps({
+                      "data": {"flow_id": flow_id},
+                      "metadata": {"version": "v1.0", "entity_id": "string"},
+                      "control": {"execution_mode": "sync"}
+                  })
+                  conn.request("POST", ENDPOINT_GET_GRAPH, payload, headers)
+                  res = conn.getresponse()
+                  data = res.read()
+                  response_json = json.loads(data.decode("utf-8"))
+
+                  for node in response_json.get("data", {}).get("graph", []):
+                      if node.get("node_type") == "code_node":
+                          node_name = node.get("node_name", "").lower()
+                          node_id = node.get("node_id")
+                          if node_name in ans:
+                              ans[node_name].append((flow_id, node_id))
+                          else:
+                              ans[node_name] = [(flow_id, node_id)]
+              return ans
+
+          def get_name_to_id_mapping(org_name):
+              """Relaciona os nomes dos arquivos aos seus respectivos flow_id e node_id."""
+              return node_ids(org_name)
+
+          # Organização usada (pode ser parametrizado se necessário)
+          ORGANIZATION_NAME = "NNN"
+
           # Lista de arquivos detectados
           python_files = os.getenv("PYTHON_FILES", "").split()
           if not python_files:
@@ -88,8 +139,9 @@ jobs:
 
           print(f"✅ Found Python files: {python_files}")
 
-          # Criar conexão com a API
-          conn = http.client.HTTPSConnection(API_HOST)
+          # Obter o mapeamento nome -> flow_id, node_id
+          name_to_id_mapping = get_name_to_id_mapping(ORGANIZATION_NAME)
+          print(f"📌 Mapping: {name_to_id_mapping}")
 
           # Enviar cada arquivo automaticamente
           for file_name in python_files:
@@ -100,11 +152,19 @@ jobs:
                   print(f"⚠️ WARNING: No code found for {file_name}, skipping...")
                   continue
 
-              # Criar payload dinâmico (Flow ID e Node ID são estáticos por enquanto)
+              node_name = file_name.replace(".py", "").lower()
+              if node_name not in name_to_id_mapping:
+                  print(f"⚠️ WARNING: No node_id found for {node_name}, skipping...")
+                  continue
+
+              # Usar o primeiro flow_id e node_id encontrados para o node_name
+              flow_id, node_id = name_to_id_mapping[node_name][0]
+
+              # Criar payload dinâmico
               payload = json.dumps({
                   "data": {
-                      "flow_id": "06457ab1-3367-43c3-9e6b-4dbaa88d1b1b",
-                      "node_id": "affc68e2-f4e7-40b2-a8e4-4f08ac9cc123",
+                      "flow_id": flow_id,
+                      "node_id": node_id,
                       "src_code": src_code
                   },
                   "metadata": {
@@ -116,11 +176,12 @@ jobs:
                   }
               })
 
-              print(f"🚀 Sending {file_name} to API...")
-              conn.request("POST", ENDPOINT, payload, headers)
+              print(f"🚀 Sending {file_name} (flow_id: {flow_id}, node_id: {node_id}) to API...")
+              conn.request("POST", ENDPOINT_UPDATE, payload, headers)
               res = conn.getresponse()
               print(f"✅ {file_name} response:", res.status, res.read().decode("utf-8"))
 
           print("🎯 All files processed!")
           EOF
+
 
