@@ -141,10 +141,6 @@ jobs:
 
           print(f"✅ Found Python files: {python_files}")
 
-          # Obter o mapeamento nome -> flow_id, node_id
-          name_to_id_mapping = get_name_to_id_mapping(ORGANIZATION_NAME)
-          print(f"📌 Mapping: {name_to_id_mapping}")
-
           # Enviar cada arquivo automaticamente
           for file_name in python_files:
               name = f"{file_name.replace('.py', '').lower()}"
