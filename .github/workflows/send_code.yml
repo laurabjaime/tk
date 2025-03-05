@@ -22,15 +22,6 @@ jobs:
             echo "API_KEY is properly set"
           fi
 
-      - name: Check Organization Name
-        run: |
-          if [ -z "${{ secrets.ORG_NAME }}" ]; then
-            echo "ERROR: ORG_NAME is missing from GitHub Secrets"
-            exit 1
-          else
-            echo "ORG_NAME is properly set"
-          fi
-
       - name: Read all Python files and store them as strings dynamically
         run: |
           echo "Searching for Python files..."
@@ -69,7 +60,6 @@ jobs:
       - name: Send code to API
         env:
           API_KEY: ${{ secrets.API_KEY }}
-          ORG_NAME: ${{ secrets.ORG_NAME }}
           PYTHON_FILES: ${{ env.PYTHON_FILES }}
         run: |
           python - <<EOF
@@ -100,7 +90,7 @@ jobs:
           def flow_ids(org_name):
               """Retrieve all flow_id from the organization."""
               payload = json.dumps({
-                  "data": {"org_name": org_name},
+                  "data": {"organization_name": org_name},
                   "metadata": {"version": "v1.0", "entity_id": "string"},
                   "control": {"execution_mode": "sync"}
               })
@@ -140,13 +130,10 @@ jobs:
               return ans
 
           # Organization name
-          # org_name = os.getenv("ORG_NAME")
-          org_name = "NB36"
-          if not org_name:
-              raise ValueError("ERROR: ORG_NAME is empty!")
+          ORGANIZATION_NAME = "NB36"
           
           # Node codes available
-          nodes_available = node_ids(org_name)
+          nodes_available = node_ids(ORGANIZATION_NAME)
 
           # List of detected files
           python_files = os.getenv("PYTHON_FILES", "").split()
@@ -188,4 +175,3 @@ jobs:
 
           print("All files processed!")
           EOF
-
