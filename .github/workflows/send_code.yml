@@ -43,7 +43,7 @@ jobs:
           # Loop to read and store the content of each file
           for file in $PYTHON_FILES; do
             FILE_NAME=$(basename "$file" .py | tr '[:lower:]' '[:upper:]')
-            echo "📄 Processing file: $file → Stored as ${FILE_NAME}_CODE"
+            echo "Processing file: $file → Stored as ${FILE_NAME}_CODE"
 
             FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 
