@@ -142,13 +142,9 @@ jobs:
                               ans[get_decision_flows['data']['graph'][i]['node_name'].lower()] = [(flow_id,node_id)]
 
               return ans
-
-          # Organization name
-          # ORGANIZATION_NAME = "NB36"
-          ORGANIZATION_NAME = org_name
           
           # Node codes available
-          nodes_available = node_ids(ORGANIZATION_NAME)
+          nodes_available = node_ids(org_name)
 
           # List of detected files
           python_files = os.getenv("PYTHON_FILES", "").split()
