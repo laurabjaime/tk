@@ -144,7 +144,8 @@ jobs:
               return ans
 
           # Organization name
-          ORGANIZATION_NAME = "NB36"
+          # ORGANIZATION_NAME = "NB36"
+          ORGANIZATION_NAME = org_name
           
           # Node codes available
           nodes_available = node_ids(ORGANIZATION_NAME)
