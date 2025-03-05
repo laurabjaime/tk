@@ -13,6 +13,15 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v3
 
+      - name: Debug - Verificar API Key
+        run: |
+          if [ -z "${{ secrets.API_KEY }}" ]; then
+            echo "Erro: API_KEY não está configurada no GitHub Secrets!"
+            exit 1
+          else
+            echo "API_KEY foi carregada corretamente!"
+          fi
+
       - name: Ler código dos arquivos Python e armazenar como string
         run: |
           SUMMARIZE_CODE=$(awk '{printf "%s\\n", $0}' summarize.py | paste -sd '' | sed 's/\\\\n/\\n/g' | sed 's/\n/\\n/g')
