@@ -62,10 +62,10 @@ jobs:
           import os
 
           conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
-          api_key = os.getenv("API_KEY")
+          api_key = os.getenv("API_KEY") # Import from  GitHub Secrets
 
           headers = {
-              "X-Api-Key": api_key, # Import from GitHub Secrets
+              "X-Api-Key": api_key,
               "accept": "application/json",
               "Content-Type": "application/json"
           }
