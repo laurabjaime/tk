@@ -1,6 +1,10 @@
-# Node Multiply
-
 def multiply(data):
-    data['total'] = data['a'] * data['b']
+    """Function that summarized cols a and b"""
+
+    data["sum"] = data["a"] * data["b"]
+
     return data
-    print("456")
+
+
+if __env:  # indicates we are running on Taktile
+    data = add(data)
