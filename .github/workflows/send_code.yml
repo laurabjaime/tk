@@ -54,8 +54,8 @@ jobs:
             FILE_NAME=$(basename "$file" .py | tr '[:lower:]' '[:upper:]')
             echo "Processing file: $file → Stored as ${FILE_NAME}_CODE"
 
-            # FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-            FILE_CONTENT=$(cat "$file")
+            FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
+            # FILE_CONTENT=$(cat "$file")
 
             # If the file is empty, display a warning but continue the workflow
             if [[ -z "$FILE_CONTENT" ]]; then
