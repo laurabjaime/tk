@@ -145,7 +145,7 @@ jobs:
               raise ValueError("ERROR: ORG_NAME is empty!")
           
           # Node codes available
-          nodes_available = node_ids(ORG_NAME)
+          nodes_available = node_ids(org_name)
 
           # List of detected files
           python_files = os.getenv("PYTHON_FILES", "").split()
