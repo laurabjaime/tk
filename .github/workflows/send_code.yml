@@ -46,7 +46,7 @@ jobs:
             echo "📄 Processing file: $file → Stored as ${FILE_NAME}_CODE"
 
             # FILE_CONTENT=$(cat "$file" | sed ':a;N;$!ba;s/\r//g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-            FILE_CONTENT=$(awk '{gsub(/"/, "\\\""); printf "%s\\n", $0}' "$file" | sed 's/\\n$//')
+            FILE_CONTENT=$(awk '{printf "%s\\n", $0}' "$file" | sed 's/\r//g' | sed 's/\\n$//')
 
             # Se o arquivo estiver vazio, exibe um aviso mas continua o workflow
             if [[ -z "$FILE_CONTENT" ]]; then
