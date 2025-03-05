@@ -62,9 +62,10 @@ jobs:
           import os
 
           conn = http.client.HTTPSConnection("eu-central-1.taktile-org.decide.taktile.com")
+          api_key = os.getenv("API_KEY")
 
           headers = {
-              "X-Api-Key": "c179117d-a4ce-4635-a268-b37d13668515", # Import from GitHub Secrets
+              "X-Api-Key": api_key, # Import from GitHub Secrets
               "accept": "application/json",
               "Content-Type": "application/json"
           }
@@ -73,10 +74,10 @@ jobs:
           multiply_code = os.getenv("MULTIPLY_CODE")
 
           if not summarize_code or summarize_code.strip() == "":
-              raise ValueError("Erro: SUMMARIZE_CODE está vazio!")
+              raise ValueError("Error: SUMMARIZE_CODE is empty!")
 
           if not multiply_code or multiply_code.strip() == "":
-              raise ValueError("Erro: MULTIPLY_CODE está vazio!")
+              raise ValueError("Error: MULTIPLY_CODE is empty!")
 
           summarize_payload = json.dumps({
               "data": {
