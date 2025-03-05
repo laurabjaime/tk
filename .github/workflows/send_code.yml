@@ -97,8 +97,11 @@ jobs:
               res = conn.getresponse()
               data = res.read()
               response_json = json.loads(data.decode("utf-8"))
-              
-              return [flow["flow_id"] for flow in response_json.get("data", {}).get("flows", [])]
+              list_decision_flows=dict(response_json)
+              flow_ids =[]
+              for i in range(len(list_decision_flows['data']['flows'])):
+                  flow_ids.append(list_decision_flows['data']['flows'][i]['flow_id'])
+              return flow_ids
 
           def node_ids(org_name):
               """Obtém todos os node_id dos code_nodes de cada flow."""
@@ -114,23 +117,22 @@ jobs:
                   res = conn.getresponse()
                   data = res.read()
                   response_json = json.loads(data.decode("utf-8"))
-
-                  for node in response_json.get("data", {}).get("graph", []):
-                      if node.get("node_type") == "code_node":
-                          node_name = node.get("node_name", "").lower()
-                          node_id = node.get("node_id")
-                          if node_name in ans:
-                              ans[node_name].append((flow_id, node_id))
+                  get_decision_flows=dict(response_json)
+                  for i in range(len(get_decision_flows['data']['graph'])):
+                      if get_decision_flows['data']['graph'][i]['node_type']=='code_node':
+                          node_id = get_decision_flows['data']['graph'][i]['node_id']
+                          if get_decision_flows['data']['graph'][i]['node_name'].lower() in ans:
+                              ans[get_decision_flows['data']['graph'][i]['node_name'].lower()].append((flow_id,node_id))
                           else:
-                              ans[node_name] = [(flow_id, node_id)]
+                              ans[get_decision_flows['data']['graph'][i]['node_name'].lower()] = [(flow_id,node_id)]
+
               return ans
 
-          def get_name_to_id_mapping(org_name):
-              """Relaciona os nomes dos arquivos aos seus respectivos flow_id e node_id."""
-              return node_ids(org_name)
-
           # Organização usada (pode ser parametrizado se necessário)
-          ORGANIZATION_NAME = "NNN"
+          ORGANIZATION_NAME = "NB36"
+          
+          # Node codes available
+          nodes_available = node_ids(ORGANIZATION_NAME)
 
           # Lista de arquivos detectados
           python_files = os.getenv("PYTHON_FILES", "").split()
@@ -145,41 +147,34 @@ jobs:
 
           # Enviar cada arquivo automaticamente
           for file_name in python_files:
+              name = f"{file_name.replace('.py', '').lower()}"
               env_var = f"{file_name.replace('.py', '').upper()}_CODE"
               src_code = os.getenv(env_var)
+              aux = nodes_available[name]
+              for i in range(len(aux)):
+                  flow_id = aux[i][0]
+                  node_id = aux[i][1]
 
-              if not src_code or src_code.strip() == "":
-                  print(f"⚠️ WARNING: No code found for {file_name}, skipping...")
-                  continue
-
-              node_name = file_name.replace(".py", "").lower()
-              if node_name not in name_to_id_mapping:
-                  print(f"⚠️ WARNING: No node_id found for {node_name}, skipping...")
-                  continue
-
-              # Usar o primeiro flow_id e node_id encontrados para o node_name
-              flow_id, node_id = name_to_id_mapping[node_name][0]
-
-              # Criar payload dinâmico
-              payload = json.dumps({
-                  "data": {
-                      "flow_id": flow_id,
-                      "node_id": node_id,
-                      "src_code": src_code
-                  },
-                  "metadata": {
-                      "version": "v1.0",
-                      "entity_id": "string"
-                  },
-                  "control": {
-                      "execution_mode": "sync"
-                  }
-              })
-
-              print(f"🚀 Sending {file_name} (flow_id: {flow_id}, node_id: {node_id}) to API...")
-              conn.request("POST", ENDPOINT_UPDATE, payload, headers)
-              res = conn.getresponse()
-              print(f"✅ {file_name} response:", res.status, res.read().decode("utf-8"))
+                  # Criar payload dinâmico
+                  payload = json.dumps({
+                      "data": {
+                          "flow_id": flow_id,
+                          "node_id": node_id,
+                          "src_code": src_code
+                      },
+                      "metadata": {
+                          "version": "v1.0",
+                          "entity_id": "string"
+                      },
+                      "control": {
+                          "execution_mode": "sync"
+                      }
+                  })
+    
+                  print(f"🚀 Sending {file_name} (flow_id: {flow_id}, node_id: {node_id}) to API...")
+                  conn.request("POST", ENDPOINT_UPDATE, payload, headers)
+                  res = conn.getresponse()
+                  print(f"✅ {file_name} response:", res.status, res.read().decode("utf-8"))
 
           print("🎯 All files processed!")
           EOF
