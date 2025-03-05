@@ -13,11 +13,6 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3
 
-      - name: Debug - Check API Key 1
-        run: |
-          echo "Checking API_KEY..."
-          echo "API_KEY=${{ secrets.API_KEY }}"
-
       - name: Debug - Check API Key
         run: |
           if [ -z "${{ secrets.API_KEY }}" ]; then
@@ -60,6 +55,8 @@ jobs:
           fi
 
       - name: Send code to API
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
         run: |
           python - <<EOF
           import http.client
